@@ -13,10 +13,10 @@ func QStore(c *gin.Context) {
 	var quote models.Quote
 	c.BindJSON(&quote)
 
-	lQuote, errs := models.GetLatestQuote()
-	if errs != nil {
+	lQuote, err := models.GetLatestQuote()
+	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
-			"message": errs,
+			"message": err,
 		})
 	} 
 	
