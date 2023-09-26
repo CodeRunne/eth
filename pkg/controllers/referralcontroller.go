@@ -30,7 +30,9 @@ func Refer(c *gin.Context) {
 	token := c.Param("token")
 	referral, err := models.GetReferral(token)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, "token not found")
+		c.JSON(http.StatusBadRequest, gin.H{
+			"message": "token not found",
+		})
         return
 	} else if utility.Timer(referral.TokenCreatedAt) >= float64(24) {
 		models.UpdateToken(token)

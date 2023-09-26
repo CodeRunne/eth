@@ -2,6 +2,7 @@ package controllers
 
 import (
 	"fmt"
+	"errors"
 	"github.com/gin-gonic/gin"
 	"github.com/infinityethback/pkg/models"
 	"github.com/infinityethback/pkg/utility"
@@ -9,6 +10,8 @@ import (
 	"os"
 	"strconv"
 )
+
+var qError string
 
 func SStore(c *gin.Context) {
 
@@ -27,10 +30,10 @@ func SStore(c *gin.Context) {
 	fetch, err := models.GetSocial(quote_id, address)
 	if err != nil {
 
-		user, ok := validateData(c, address, quote_id)
-		if !ok {
+		user, valError := validateData(c, address, quote_id)
+		if valError != nil {
 			c.JSON(http.StatusBadRequest, gin.H{
-				"message": "Wallet address / quote record not found",
+				"message": qError,
 			})
 			return
 		}
@@ -71,10 +74,10 @@ func SStore(c *gin.Context) {
 		return
 	} else {
 
-		user, ok := validateData(c, address, quote_id)
-		if !ok {
+		user, valError := validateData(c, address, quote_id)
+		if valError != nil {
 			c.JSON(http.StatusBadRequest, gin.H{
-				"message": "Wallet address / quote record not found",
+				"message": qError,
 			})
 			return
 		}
@@ -139,15 +142,20 @@ func SStore(c *gin.Context) {
 
 }
 
-func validateData(c *gin.Context,address string, quote_id uint) (map[string]interface{}, bool) {
+func validateData(c *gin.Context,address string, quote_id uint) (map[string]interface{}, error) {
 	user, _ := models.GetUser(address)
 	quote, _ := models.GetQuote(quote_id)
 	
 	if len(user) == 0 || (*quote == models.Quote{}) {
-		return user, false
+		qError = "Wallet address / quote record not found"
+		return user, errors.New(qError)
+	} else if utility.Timer(quote.CreatedAt) > float64(24) {
+		qError = "Quote Expired"
+		return user, errors.New(qError)
+	} else{
+		return user, nil
 	}
 
-	return user, true
 }
 
 func incrementUserCount(c *gin.Context, earning int64, quote_count uint, address string) {

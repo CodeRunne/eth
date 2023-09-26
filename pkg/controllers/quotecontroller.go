@@ -15,6 +15,17 @@ func QStore(c *gin.Context) {
 
 	lQuote, errs := models.GetLatestQuote()
 	if errs != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"message": errs,
+		})
+	} 
+	
+	if utility.Timer(lQuote.CreatedAt) <= float64(24) {
+		response := fmt.Sprintf("Next quote is due in the next %.f hours", float64(24) - utility.Timer(lQuote.CreatedAt))
+		c.JSON(http.StatusBadRequest, gin.H{
+			"message": response,
+		})
+	} else {
 		result, err := models.CreateQuote(&quote)
 		if err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{
@@ -25,12 +36,6 @@ func QStore(c *gin.Context) {
 
 		c.JSON(http.StatusCreated, result)
 		return
-
-	} else if utility.Timer(lQuote.CreatedAt) <= float64(24) {
-		response := fmt.Sprintf("Next quote is due in the next %.f hours", float64(24) - utility.Timer(lQuote.CreatedAt))
-		c.JSON(http.StatusBadRequest, gin.H{
-			"message": response,
-		})
 	}
 
 }
